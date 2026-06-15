@@ -1,0 +1,23 @@
+# Binaries
+/bin/
+/dist/
+*.exe
+
+# Test & coverage
+coverage.out
+coverage.html
+
+# Environment
+.env
+.env.local
+
+# Local config overrides
+config/config.local.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store

@@ -1,0 +1,78 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -race -cover ./...
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: temtem
+          POSTGRES_PASSWORD: temtem
+          POSTGRES_DB: temtem
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U temtem -d temtem"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
+    env:
+      TEMTEM_JWT__SECRET: ci-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: apply migrations
+        run: |
+          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          migrate -path migrations -database "postgres://temtem:temtem@localhost:5432/temtem?sslmode=disable" up
+      - run: go test -race -tags=integration ./test/integration/...
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go build ./...
+      - name: docker build
+        run: docker build -f deployments/Dockerfile -t temtem:ci .

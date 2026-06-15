@@ -1,0 +1,68 @@
+MODULE        := github.com/kurnhyalcantara/temtem
+BINARY        := temtem
+COMPOSE_FILE  := deployments/docker-compose.yml
+MIGRATIONS    := migrations
+POSTGRES_DSN  ?= postgres://temtem:temtem@localhost:5432/temtem?sslmode=disable
+
+VERSION       ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT        ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+DATE          ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+LDFLAGS       := -s -w \
+  -X main.buildVersion=$(VERSION) \
+  -X main.buildCommit=$(COMMIT) \
+  -X main.buildDate=$(DATE)
+
+.PHONY: all build run test test-integration lint vet proto-update \
+        migrate-up migrate-down migrate-create docker-build docker-up docker-down tidy tools
+
+all: lint test build
+
+build:
+	go build -trimpath -ldflags="$(LDFLAGS)" -o bin/$(BINARY) ./cmd/server
+
+run:
+	go run ./cmd/server serve
+
+test:
+	go test -race -cover ./...
+
+test-integration:
+	go test -race -tags=integration ./test/integration/...
+
+vet:
+	go vet ./...
+
+lint:
+	golangci-lint run ./...
+
+# Protos live in the centralized contract repo (github.com/kurnhyalcantara/probopass).
+# This pulls the latest generated stubs; edit the contracts in that repo, not here.
+proto-update:
+	go get github.com/kurnhyalcantara/probopass@latest
+	go mod tidy
+
+migrate-up:
+	migrate -path $(MIGRATIONS) -database "$(POSTGRES_DSN)" up
+
+migrate-down:
+	migrate -path $(MIGRATIONS) -database "$(POSTGRES_DSN)" down 1
+
+# Usage: make migrate-create NAME=create_foo
+migrate-create:
+	migrate create -ext sql -dir $(MIGRATIONS) -seq $(NAME)
+
+docker-build:
+	docker build -f deployments/Dockerfile -t $(BINARY):latest .
+
+docker-up:
+	docker compose -f $(COMPOSE_FILE) up -d
+
+docker-down:
+	docker compose -f $(COMPOSE_FILE) down
+
+tidy:
+	go mod tidy
+
+tools:
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
