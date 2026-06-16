@@ -16,10 +16,9 @@ RUN CGO_ENABLED=0 go build -trimpath \
 FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=builder /out/server /server
-COPY config/config.yaml /config/config.yaml
 
 # gRPC, HTTP gateway, ops (metrics/health)
 EXPOSE 9090 8080 9100
 
 ENTRYPOINT ["/server"]
-CMD ["serve", "--config", "/config/config.yaml"]
+CMD ["serve", "--config", ""]

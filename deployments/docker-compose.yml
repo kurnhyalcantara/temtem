@@ -1,50 +1,29 @@
 name: temtem
 
+networks:
+  koer-network:
+    external: true
+
 services:
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: temtem
-      POSTGRES_PASSWORD: temtem
-      POSTGRES_DB: temtem
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U temtem -d temtem"]
-      interval: 2s
-      timeout: 2s
-      retries: 15
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 2s
-      timeout: 2s
-      retries: 15
-
   migrate:
     image: migrate/migrate:v4.18.1
     profiles: ["tools"]
+    networks:
+      - koer-network
     volumes:
       - ../migrations:/migrations:ro
     command:
       - -path=/migrations
       - -database=postgres://temtem:temtem@postgres:5432/temtem?sslmode=disable
       - up
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   app:
     profiles: ["app"]
     build:
       context: ..
       dockerfile: deployments/Dockerfile
+    networks:
+      - koer-network
     environment:
       TEMTEM_POSTGRES__HOST: postgres
       TEMTEM_REDIS__ADDR: redis:6379
@@ -52,11 +31,3 @@ services:
       - "9090:9090"
       - "8080:8080"
       - "9100:9100"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-volumes:
-  postgres-data:

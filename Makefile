@@ -13,7 +13,7 @@ LDFLAGS       := -s -w \
   -X main.buildDate=$(DATE)
 
 .PHONY: all build run test test-integration lint vet proto-update \
-        migrate-up migrate-down migrate-create docker-build docker-up docker-down tidy tools
+        migrate-up migrate-down migrate-create docker-build compose-up compose-down compose-migrate tidy tools
 
 all: lint test build
 
@@ -54,11 +54,14 @@ migrate-create:
 docker-build:
 	docker build -f deployments/Dockerfile -t $(BINARY):latest .
 
-docker-up:
-	docker compose -f $(COMPOSE_FILE) up -d
+compose-up:
+	docker compose -f $(COMPOSE_FILE) --profile app up -d
 
-docker-down:
-	docker compose -f $(COMPOSE_FILE) down
+compose-down:
+	docker compose -f $(COMPOSE_FILE) --profile app down
+
+compose-migrate:
+	docker compose -f $(COMPOSE_FILE) --profile tools run --rm migrate
 
 tidy:
 	go mod tidy
