@@ -1,6 +1,7 @@
 MODULE        := github.com/kurnhyalcantara/temtem
 BINARY        := temtem
 COMPOSE_FILE  := deployments/docker-compose.yml
+COMPOSE       := docker compose --project-directory . -f $(COMPOSE_FILE)
 MIGRATIONS    := migrations
 POSTGRES_DSN  ?= postgres://temtem:temtem@localhost:5432/temtem?sslmode=disable
 
@@ -55,13 +56,13 @@ docker-build:
 	docker build -f deployments/Dockerfile -t $(BINARY):latest .
 
 compose-up:
-	docker compose -f $(COMPOSE_FILE) --profile app up -d
+	$(COMPOSE) --profile app up -d
 
 compose-down:
-	docker compose -f $(COMPOSE_FILE) --profile app down
+	$(COMPOSE) --profile app down
 
 compose-migrate:
-	docker compose -f $(COMPOSE_FILE) --profile tools run --rm migrate
+	$(COMPOSE) --profile tools run --rm migrate
 
 tidy:
 	go mod tidy

@@ -11,10 +11,10 @@ services:
     networks:
       - koer-network
     volumes:
-      - ../migrations:/migrations:ro
+      - ./migrations:/migrations:ro
     command:
       - -path=/migrations
-      - -database=postgres://temtem:temtem@postgres:5432/temtem?sslmode=disable
+      - -database=postgres://${TEMTEM_POSTGRES__USER:-temtem}:${TEMTEM_POSTGRES__PASSWORD:-temtem}@postgres:${TEMTEM_POSTGRES__PORT:-5432}/${TEMTEM_POSTGRES__DATABASE:-temtem}?sslmode=${TEMTEM_POSTGRES__SSL_MODE:-disable}
       - up
 
   app:
