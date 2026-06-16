@@ -6,13 +6,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	redislib "github.com/redis/go-redis/v9"
 
+	platjwt "github.com/kurnhyalcantara/kingler/pkg/platform/jwt"
+	platvalidator "github.com/kurnhyalcantara/kingler/pkg/platform/validator"
+
 	"github.com/kurnhyalcantara/temtem/config"
 	sessiongrpc "github.com/kurnhyalcantara/temtem/internal/features/session/delivery/grpc"
 	"github.com/kurnhyalcantara/temtem/internal/features/session/repository"
 	"github.com/kurnhyalcantara/temtem/internal/features/session/usecase"
 	"github.com/kurnhyalcantara/temtem/internal/features/session/validator"
-	platjwt "github.com/kurnhyalcantara/temtem/platform/jwt"
-	platvalidator "github.com/kurnhyalcantara/temtem/platform/validator"
 )
 
 // SessionRepository composes the PostgreSQL store with the Redis

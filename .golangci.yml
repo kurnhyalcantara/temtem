@@ -33,7 +33,7 @@ linters:
           deny:
             - pkg: github.com/kurnhyalcantara/probopass/gen
               desc: usecase must not depend on transport types; map in delivery/mapper
-            - pkg: github.com/kurnhyalcantara/temtem/platform
+            - pkg: github.com/kurnhyalcantara/kingler/pkg/platform
               desc: usecase must not depend on infrastructure; define the port where it is consumed
             - pkg: github.com/kurnhyalcantara/temtem/internal/features/session/delivery
               desc: usecase must not depend on delivery
@@ -43,15 +43,6 @@ linters:
               desc: usecase must not depend on database drivers
             - pkg: github.com/redis/go-redis
               desc: usecase must not depend on database drivers
-        # Platform is infrastructure initialization only — no app/business code.
-        platform-no-business:
-          files:
-            - "**/platform/**"
-          deny:
-            - pkg: github.com/kurnhyalcantara/temtem/internal
-              desc: platform contains infrastructure initialization only
-            - pkg: github.com/kurnhyalcantara/temtem/quiver
-              desc: platform must not depend on the composition root
 formatters:
   enable:
     - gofmt

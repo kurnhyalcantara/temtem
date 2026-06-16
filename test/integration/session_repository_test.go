@@ -16,10 +16,11 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/kurnhyalcantara/kingler/pkg/platform/postgres"
+
 	"github.com/kurnhyalcantara/temtem/config"
 	domain "github.com/kurnhyalcantara/temtem/internal/domain/session"
 	"github.com/kurnhyalcantara/temtem/internal/features/session/repository"
-	"github.com/kurnhyalcantara/temtem/platform/postgres"
 )
 
 func TestPostgresSessionRepository(t *testing.T) {

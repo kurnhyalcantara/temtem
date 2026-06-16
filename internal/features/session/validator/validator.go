@@ -3,9 +3,10 @@
 package validator
 
 import (
+	"github.com/kurnhyalcantara/kingler/pkg/apperror"
+	platvalidator "github.com/kurnhyalcantara/kingler/pkg/platform/validator"
+
 	"github.com/kurnhyalcantara/temtem/internal/features/session/dto"
-	"github.com/kurnhyalcantara/temtem/pkg/apperror"
-	platvalidator "github.com/kurnhyalcantara/temtem/platform/validator"
 )
 
 type Validator struct {

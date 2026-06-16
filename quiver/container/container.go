@@ -17,10 +17,11 @@ import (
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/kurnhyalcantara/kingler/pkg/middleware"
+	platgrpc "github.com/kurnhyalcantara/kingler/pkg/platform/grpc"
+	"github.com/kurnhyalcantara/kingler/pkg/platform/telemetry"
+
 	"github.com/kurnhyalcantara/temtem/config"
-	"github.com/kurnhyalcantara/temtem/internal/middleware"
-	platgrpc "github.com/kurnhyalcantara/temtem/platform/grpc"
-	"github.com/kurnhyalcantara/temtem/platform/telemetry"
 	"github.com/kurnhyalcantara/temtem/quiver/provider"
 	"github.com/kurnhyalcantara/temtem/quiver/registry"
 )

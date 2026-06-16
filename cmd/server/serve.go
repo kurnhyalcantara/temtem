@@ -42,6 +42,7 @@ func serve(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
+
 	log := c.Logger
 
 	grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Server.GRPCPort))

@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kurnhyalcantara/kingler/pkg/apperror"
+	"github.com/kurnhyalcantara/kingler/pkg/ctxutil"
+
 	domain "github.com/kurnhyalcantara/temtem/internal/domain/session"
 	"github.com/kurnhyalcantara/temtem/internal/features/session/dto"
-	"github.com/kurnhyalcantara/temtem/pkg/apperror"
-	"github.com/kurnhyalcantara/temtem/pkg/ctxutil"
 )
 
 // fakeRepo is an in-memory Repository double.
