@@ -37,7 +37,9 @@ log:
   level: debug
   format: text
 
+# scaffold:telemetry:start
 telemetry:
   enabled: false
   otlp_endpoint: localhost:4317
   sample_ratio: 1.0
+# scaffold:telemetry:end

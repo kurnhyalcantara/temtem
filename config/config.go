@@ -24,13 +24,15 @@ const (
 )
 
 type Config struct {
-	App       App       `koanf:"app"`
-	Server    Server    `koanf:"server"`
-	Postgres  Postgres  `koanf:"postgres"`
-	Redis     Redis     `koanf:"redis"`
-	JWT       JWT       `koanf:"jwt"`
-	Log       Log       `koanf:"log"`
+	App      App      `koanf:"app"`
+	Server   Server   `koanf:"server"`
+	Postgres Postgres `koanf:"postgres"`
+	Redis    Redis    `koanf:"redis"`
+	JWT      JWT      `koanf:"jwt"`
+	Log      Log      `koanf:"log"`
+	// scaffold:telemetry:start
 	Telemetry Telemetry `koanf:"telemetry"`
+	// scaffold:telemetry:end
 }
 
 type App struct {
@@ -83,11 +85,14 @@ type Log struct {
 	Format string `koanf:"format"` // json | text
 }
 
+// scaffold:telemetry:start
 type Telemetry struct {
 	Enabled      bool    `koanf:"enabled"`
 	OTLPEndpoint string  `koanf:"otlp_endpoint"`
 	SampleRatio  float64 `koanf:"sample_ratio"`
 }
+
+// scaffold:telemetry:end
 
 func defaults() map[string]any {
 	return map[string]any{
@@ -113,9 +118,11 @@ func defaults() map[string]any {
 		"jwt.refresh_ttl":            "720h",
 		"log.level":                  "info",
 		"log.format":                 "json",
-		"telemetry.enabled":          false,
-		"telemetry.otlp_endpoint":    "localhost:4317",
-		"telemetry.sample_ratio":     1.0,
+		// scaffold:telemetry:start
+		"telemetry.enabled":       false,
+		"telemetry.otlp_endpoint": "localhost:4317",
+		"telemetry.sample_ratio":  1.0,
+		// scaffold:telemetry:end
 	}
 }
 

@@ -1,0 +1,82 @@
+# scaffold.yaml — the template's self-description, consumed by create-temtem
+# (https://github.com/kurnhyalcantara/create-temtem). It declares how to turn
+# this repository into a fresh service: which paths to drop, which tokens to
+# rewrite, and which optional slices are toggleable. The `// scaffold:<id>:...`
+# comment markers in the source files mark the regions each toggle strips; the
+# template still builds, lints, and tests because those markers are plain
+# comments.
+version: 1
+
+# Paths never copied into a generated project: VCS metadata, local secrets and
+# build output, editor/agent config, the seeded (non-example) config, and this
+# manifest itself.
+exclude:
+  - .git
+  - bin
+  - .env
+  - .claude
+  - CLAUDE.md
+  - config/config.yaml
+  - scaffold.yaml
+
+# Ordered token substitutions, most-specific first so the full module path is
+# rewritten before the bare "temtem" word. The shared org (kurnhyalcantara) and
+# external dependencies (probopass, kingler) are intentionally left untouched —
+# only the full module path and standalone "temtem"/"TEMTEM_" tokens move.
+replacements:
+  - find: github.com/kurnhyalcantara/temtem
+    var: ModulePath
+  - find: TEMTEM_
+    var: EnvPrefix
+  - find: temtem
+    var: AppName
+    wordBoundary: true
+
+# Optional feature/infra slices. Disabling one deletes its removePaths and
+# strips the marker regions named in removeBlocks (a toggle may strip another's
+# wiring — e.g. dropping `session` also strips the jwt/auth blocks it is the
+# sole consumer of).
+toggles:
+  - id: session
+    prompt: "Include the sample 'session' feature (with its jwt/auth wiring)?"
+    default: true
+    removePaths:
+      - internal/features/session
+      - internal/domain/session
+      - test/integration
+      - migrations/000001_create_sessions.up.sql
+      - migrations/000001_create_sessions.down.sql
+    removeBlocks:
+      - session
+
+  - id: redis
+    prompt: "Include the Redis read-through cache decorator?"
+    default: true
+    requires:
+      - session
+    removePaths:
+      - internal/features/session/repository/redis_cache.go
+    removeBlocks:
+      - redis
+
+  - id: telemetry
+    prompt: "Include OpenTelemetry tracing and metrics?"
+    default: false
+    removeBlocks:
+      - telemetry
+
+  - id: docker
+    prompt: "Include the Dockerfile and docker-compose stack?"
+    default: true
+    removePaths:
+      - deployments
+    removeBlocks:
+      - docker
+
+  - id: ci
+    prompt: "Include the GitHub Actions CI workflow?"
+    default: true
+    removePaths:
+      - .github
+    removeBlocks:
+      - ci

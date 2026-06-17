@@ -105,7 +105,9 @@ func serve(ctx context.Context, cfg *config.Config) error {
 // opsMux serves the operational endpoints kept off the public HTTP port.
 func opsMux(c *container.Container) http.Handler {
 	mux := http.NewServeMux()
+	// scaffold:telemetry:start
 	mux.Handle("/metrics", c.Telemetry.MetricsHandler)
+	// scaffold:telemetry:end
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
