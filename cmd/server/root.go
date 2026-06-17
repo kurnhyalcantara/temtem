@@ -21,8 +21,16 @@ var (
 // subcommands that load configuration.
 var configPath string
 
-// newRootCmd assembles the command tree. The root has no run behaviour of its
-// own; `serve` runs the service.
+// Execute runs the CLI and converts a command error into a non-zero exit.
+func Execute() {
+	if err := newRootCmd().Execute(); err != nil {
+		slog.Error("command failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+}
+
+// newRootCmd assembles the command tree. The root has no run behaviour of its own;
+// `serve` runs the service.
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "temtem",
@@ -37,12 +45,4 @@ func newRootCmd() *cobra.Command {
 
 	root.AddCommand(newServeCmd(), newVersionCmd())
 	return root
-}
-
-// Execute runs the CLI and converts a command error into a non-zero exit.
-func Execute() {
-	if err := newRootCmd().Execute(); err != nil {
-		slog.Error("command failed", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
 }
