@@ -12,6 +12,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	// scaffold:session:start
 	sessionv1 "github.com/kurnhyalcantara/probopass/gen/go/probopass/session/v1"
 	// scaffold:session:end
@@ -24,11 +25,13 @@ import (
 
 	"github.com/kurnhyalcantara/kingler/pkg/middleware"
 	platgrpc "github.com/kurnhyalcantara/kingler/pkg/platform/grpc"
+
 	// scaffold:session:start
 	platjwt "github.com/kurnhyalcantara/kingler/pkg/platform/jwt"
 	// scaffold:session:end
 	"github.com/kurnhyalcantara/kingler/pkg/platform/logger"
 	"github.com/kurnhyalcantara/kingler/pkg/platform/postgres"
+
 	// scaffold:redis:start
 	"github.com/kurnhyalcantara/kingler/pkg/platform/redis"
 	// scaffold:redis:end
