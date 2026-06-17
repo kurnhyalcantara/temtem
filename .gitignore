@@ -7,10 +7,6 @@
 coverage.out
 coverage.html
 
-# Environment
-.env
-.env.local
-
 # Local config overrides (never commit real config — use TEMTEM_ env vars in production)
 config/config.yaml
 config/config.local.yaml

@@ -88,7 +88,7 @@ consumed as a module dependency.
 
 Precedence: defaults < `config/config.yaml` < environment. Env convention:
 `TEMTEM_` prefix, `__` for nesting — `TEMTEM_POSTGRES__HOST=db` overrides
-`postgres.host`. See `.env.example`. The server refuses to start in
+`postgres.host`. See `config/config.example.yaml`. The server refuses to start in
 production with the default JWT secret.
 
 ## Using this template for a new service
