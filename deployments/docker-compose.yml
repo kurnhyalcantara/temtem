@@ -1,5 +1,15 @@
 name: temtem
 
+# Runs temtem as an upstream behind the infernape Kong platform.
+# Joins the shared external `koer-network` and talks to the platform's shared
+# `koer-postgres` / `koer-redis`. Public traffic enters via Kong on :8000
+# (route /api/session -> http://temtem:8080); see infernape/kong/kong.yaml.
+#
+# Secrets are supplied at runtime via the environment (or a gitignored
+# deployments/.env), never hardcoded here. Required vars:
+#   TEMTEM_POSTGRES__PASSWORD  (infernape POSTGRES_PASSWORD)
+#   TEMTEM_JWT__SECRET         (any non-empty secret)
+
 networks:
   koer-network:
     external: true
@@ -11,22 +21,31 @@ services:
     networks:
       - koer-network
     volumes:
-      - ./migrations:/migrations:ro
+      - ../migrations:/migrations:ro
     command:
+      # The password is embedded in this URL. If TEMTEM_POSTGRES__PASSWORD
+      # contains reserved characters (e.g. '@'), set TEMTEM_MIGRATE_DATABASE_URL
+      # to a fully URL-encoded DSN instead (e.g. '@' -> '%40').
       - -path=/migrations
-      - -database=postgres://${TEMTEM_POSTGRES__USER:-temtem}:${TEMTEM_POSTGRES__PASSWORD:-temtem}@postgres:${TEMTEM_POSTGRES__PORT:-5432}/${TEMTEM_POSTGRES__DATABASE:-temtem}?sslmode=${TEMTEM_POSTGRES__SSL_MODE:-disable}
+      - -database=${TEMTEM_MIGRATE_DATABASE_URL:-postgres://${TEMTEM_POSTGRES__USER:-admin}:${TEMTEM_POSTGRES__PASSWORD:?set TEMTEM_POSTGRES__PASSWORD or TEMTEM_MIGRATE_DATABASE_URL}@koer-postgres:${TEMTEM_POSTGRES__PORT:-5432}/${TEMTEM_POSTGRES__DATABASE:-temtem}?sslmode=${TEMTEM_POSTGRES__SSL_MODE:-disable}}
       - up
 
   app:
     profiles: ["app"]
+    container_name: temtem
     build:
       context: ..
       dockerfile: deployments/Dockerfile
     networks:
       - koer-network
     environment:
-      TEMTEM_POSTGRES__HOST: postgres
-      TEMTEM_REDIS__ADDR: redis:6379
+      TEMTEM_POSTGRES__HOST: ${TEMTEM_POSTGRES__HOST:-koer-postgres}
+      TEMTEM_POSTGRES__PORT: ${TEMTEM_POSTGRES__PORT:-5432}
+      TEMTEM_POSTGRES__USER: ${TEMTEM_POSTGRES__USER:-admin}
+      TEMTEM_POSTGRES__PASSWORD: ${TEMTEM_POSTGRES__PASSWORD:?set TEMTEM_POSTGRES__PASSWORD}
+      TEMTEM_POSTGRES__DATABASE: ${TEMTEM_POSTGRES__DATABASE:-temtem}
+      TEMTEM_REDIS__ADDR: ${TEMTEM_REDIS__ADDR:-koer-redis:6379}
+      TEMTEM_JWT__SECRET: ${TEMTEM_JWT__SECRET:?set TEMTEM_JWT__SECRET}
     ports:
       - "9090:9090"
       - "8080:8080"

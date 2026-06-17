@@ -15,7 +15,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/kurnhyalcantara/temtem/config"
-	"github.com/kurnhyalcantara/temtem/quiver/container"
+	"github.com/kurnhyalcantara/temtem/container"
 )
 
 // newServeCmd builds the command that runs the service.

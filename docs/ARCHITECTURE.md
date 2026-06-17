@@ -19,7 +19,7 @@ blueprint for every service built from this template.
             ├────────────────────────────────────────────┤
  outbound → │ repository ← adapters: pg, redis, APIs ... │
             └────────────────────────────────────────────┘
-              platform = infra init   quiver = wiring
+              platform = infra init   container = wiring
 ```
 
 | Layer | Location | Responsibility |
@@ -27,7 +27,7 @@ blueprint for every service built from this template.
 | Domain | `internal/domain/{name}` | Entities, value objects, invariants, domain errors |
 | Feature | `internal/features/{name}` | One vertical slice: delivery, usecase, repository, dto, mapper, validator |
 | Platform | `platform/*` | Infrastructure **initialization only** (clients, servers, token manager) |
-| Quiver | `quiver/*` | Composition root: providers, registries, the container |
+| Container | `container/` | Composition root: `Build` wires the whole graph, `Close` tears it down |
 | Shared | `pkg/*`, `internal/constants`, `internal/middleware` | Cross-cutting concerns (`pkg/*` is publicly importable) |
 
 ## Dependency rules
@@ -41,14 +41,14 @@ Enforced by `depguard` in `.golangci.yml` — violations fail `make lint` and CI
    feature's `dto` and `repository` *interface*, and `pkg/*`. It must not import
    the probopass proto stubs, `platform/`, drivers, or `delivery`. When a usecase
    needs a platform capability (e.g. token signing), it defines a small interface
-   where it is consumed (see `usecase.TokenIssuer`) and quiver injects the
+   where it is consumed (see `usecase.TokenIssuer`) and the container injects the
    platform implementation.
 3. **Transport types stop at the mapper.** Only `delivery` and `mapper` may
    import the probopass proto stubs. Proto messages never reach usecases or the
    domain.
 4. **Platform contains no business logic.** `platform/**` may import `config`
-   and third-party libraries, never `internal/` or `quiver/`.
-5. **Quiver imports everything; nothing imports quiver** (except `cmd/`).
+   and third-party libraries, never `internal/` or `container/`.
+5. **The container imports everything; nothing imports the container** (except `cmd/`).
 
 ## Repository definition
 
@@ -87,16 +87,16 @@ The matching domain package lives in `internal/domain/{feature}`.
 
 Manual constructor wiring — no DI framework, no codegen, no reflection.
 
-- `quiver/provider`: one constructor per dependency. Providers only *construct*;
-  composition decisions (e.g. wrapping the Postgres repository in the Redis
-  cache) are made here and documented with a comment.
-- `quiver/registry`: attaches every feature's handlers to the gRPC server and
-  gateway mux, and merges per-feature `ProtectedMethods` for the auth
-  interceptor.
-- `quiver/container`: `Build(ctx, cfg)` wires config → platform → repositories
-  → usecases → handlers → middleware → servers, in that order, and `Close(ctx)`
-  releases resources in reverse. `cmd/server` is a cobra CLI; its `serve`
-  command loads config, calls `container.Build`, and runs the servers.
+- `container`: `Build(ctx, cfg)` is the single composition root. It calls the
+  platform and feature constructors directly — config → platform → repositories
+  → usecases → handlers → middleware → servers, in that order — making
+  composition decisions inline (e.g. wrapping the Postgres repository in the
+  Redis cache) with a comment, registers each feature's handlers on the gRPC
+  server and gateway mux, and merges per-feature `ProtectedMethods` via
+  `protectedMethods` for the auth interceptor. `Close(ctx)` releases resources
+  in reverse. There is no separate provider or registry layer. `cmd/server` is a
+  cobra CLI; its `serve` command loads config, calls `container.Build`, and runs
+  the servers.
 
 ## Error handling
 
@@ -147,8 +147,8 @@ Manual constructor wiring — no DI framework, no codegen, no reflection.
    session feature layout: dto → repository (interface + adapters) → usecase
    (+ tests against a fake repository) → mapper (+ tests) → validator →
    delivery/grpc (+ `ProtectedMethods`) → delivery/rest.
-5. **Wire it**: add providers in `quiver/provider/{feature}.go`, register in
-   `quiver/registry` (gRPC, gateway, protected methods), construct it in
-   `quiver/container.Build`.
+5. **Wire it**: in `container.Build`, construct the repository → usecase →
+   handler, register it on the gRPC server and gateway mux, and add its
+   `ProtectedMethods` to `protectedMethods`.
 6. **Verify**: `make lint test build` — depguard will flag any layering
    mistake.

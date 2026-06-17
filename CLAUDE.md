@@ -19,23 +19,23 @@ A production-grade Go microservice template — the blueprint for all future ser
 
 ## Architecture (full rules: docs/ARCHITECTURE.md)
 
-Request flow: `delivery/grpc` (or REST → gateway → loopback gRPC) → `validator` → `mapper` → `usecase` → `repository` (port) → adapter (Postgres/Redis/external service). `quiver/container.Build` wires everything by hand (manual DI, no framework); `cmd/server` is a cobra CLI whose `serve` command loads config, builds the container, and runs the servers (`root.go`/`serve.go`/`version.go`, all `package main`).
+Request flow: `delivery/grpc` (or REST → gateway → loopback gRPC) → `validator` → `mapper` → `usecase` → `repository` (port) → adapter (Postgres/Redis/external service). `container.Build` (root-level `container` package) wires everything by hand (manual DI, no framework) — calling platform and feature constructors directly, no separate provider/registry layer; `cmd/server` is a cobra CLI whose `serve` command loads config, builds the container, and runs the servers (`root.go`/`serve.go`/`version.go`, all `package main`).
 
 Layering rules (depguard-enforced):
 - `internal/domain/**` is pure: stdlib + domain packages only.
-- `usecase` never imports the probopass proto stubs, `platform/`, drivers, or `delivery`. If a usecase needs a platform capability, define a small interface in the usecase package (see `usecase.TokenIssuer`) and inject it from quiver.
+- `usecase` never imports the probopass proto stubs, `platform/`, drivers, or `delivery`. If a usecase needs a platform capability, define a small interface in the usecase package (see `usecase.TokenIssuer`) and inject it from the container.
 - Proto types stop at `mapper`; they never reach usecases or the domain.
-- `platform/**` is infrastructure initialization only — must not import `internal/` or `quiver/`.
+- `platform/**` is infrastructure initialization only — must not import `internal/` or `container/`.
 - A `repository` is any outbound adapter (DB, cache, other services, brokers), not just database access. Interface in `features/{f}/repository`, implementations beside it, composable (see the Redis read-through decorator `NewRedisCache`).
 
 Cross-cutting:
 - Errors: return `*apperror.Error` from usecases/repositories; `middleware.AppError` maps to gRPC codes and the gateway error handler maps those to HTTP JSON. Repositories convert driver errors to domain errors (`pgx.ErrNoRows` → `domain.ErrNotFound`).
-- Auth: `middleware.Auth` checks bearer JWTs only for methods listed in each feature's `ProtectedMethods` map (merged in `quiver/registry`). Identity travels via `ctxutil.Identity`, not raw claims.
+- Auth: `middleware.Auth` checks bearer JWTs only for methods listed in each feature's `ProtectedMethods` map (merged in `container.protectedMethods`). Identity travels via `ctxutil.Identity`, not raw claims.
 - Config: koanf, precedence defaults < `config/config.yaml` < env (`TEMTEM_` prefix, `__` = nesting: `TEMTEM_POSTGRES__HOST`).
 
 ## Adding a feature
 
-Follow docs/ARCHITECTURE.md "Adding a feature": add/extend the proto in the probopass repo and release it → `make proto-update` → domain → migration → feature slice copied from `internal/features/session/` → providers in `quiver/provider`, registration in `quiver/registry`, construction in `quiver/container`. Usecase tests use a hand-written fake repository (see `usecase_test.go`), not a mocking library.
+Follow docs/ARCHITECTURE.md "Adding a feature": add/extend the proto in the probopass repo and release it → `make proto-update` → domain → migration → feature slice copied from `internal/features/session/` → wire it directly in `container.Build` (construct repository/usecase/handler, register on the gRPC server and gateway, add to `protectedMethods`). Usecase tests use a hand-written fake repository (see `usecase_test.go`), not a mocking library.
 
 ## Conventions
 

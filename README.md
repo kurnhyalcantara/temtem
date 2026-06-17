@@ -73,7 +73,7 @@ internal/
   constants/      app-wide constants
 pkg/              publicly importable library code (apperror, ctxutil, pagination)
 platform/         infrastructure initialization only (pg, redis, grpc, jwt, logger, telemetry, validator)
-quiver/           composition root (provider, registry, container)
+container/        composition root (Build wires everything; Close tears it down)
 migrations/       golang-migrate SQL files
 deployments/      Dockerfile + docker-compose
 test/integration/ integration tests (`-tags=integration`)

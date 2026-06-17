@@ -11,6 +11,10 @@ coverage.html
 config/config.yaml
 config/config.local.yaml
 
+# Compose env files (hold platform secrets — TEMTEM_POSTGRES__PASSWORD, TEMTEM_JWT__SECRET)
+.env
+deployments/.env
+
 # IDE
 .idea/
 .vscode/
