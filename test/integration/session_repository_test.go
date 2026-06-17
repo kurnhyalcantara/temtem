@@ -41,7 +41,12 @@ func TestPostgresSessionRepository(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	pool, err := postgres.New(ctx, cfg.Postgres)
+	pool, err := postgres.New(ctx,
+		postgres.WithDSN(cfg.Postgres.DSN()),
+		postgres.WithMaxConns(cfg.Postgres.MaxConns),
+		postgres.WithMinConns(cfg.Postgres.MinConns),
+		postgres.WithMaxConnLifetime(cfg.Postgres.MaxConnLifetime),
+	)
 	if err != nil {
 		t.Fatalf("connect postgres (are the compose services up and migrated?): %v", err)
 	}
