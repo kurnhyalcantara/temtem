@@ -10,12 +10,12 @@ A production-grade Go microservice template — the blueprint for all future ser
 
 - `make build` / `make run` — build / run `cmd/server` (a cobra CLI; `make run` invokes the `serve` subcommand). The binary also exposes `temtem version`; `--config` is a persistent flag.
 - `make test` — unit tests; single test: `go test -run TestRefreshRotatesSession ./internal/features/session/usecase/`
-- `make test-integration` — requires `make docker-up` + migrations first
+- `make test-integration` — requires Postgres/Redis reachable (see below) + migrations first
 - `make lint` — golangci-lint; **depguard enforces the architecture rules below, so lint failures may be layering violations, not style**
 - `make proto-update` — pull the latest generated stubs from the probopass contract repo (`go get …/probopass@latest && go mod tidy`); edit the `.proto` contracts in that repo, not here
 - `make migrate-up` / `make migrate-create NAME=create_foos` — golang-migrate against local Postgres
 - `scripts/migrate.sh up` — migrations via Docker when the migrate CLI isn't installed
-- Local stack: `docker compose -f deployments/docker-compose.yml up -d postgres redis`
+- Local stack: `deployments/docker-compose.yml` joins the shared external `koer-network` (infernape platform) and talks to its `koer-postgres`/`koer-redis` — it does not start Postgres/Redis itself. `make compose-up` runs temtem against that network; `make compose-migrate` runs migrations the same way.
 
 ## Architecture (full rules: docs/ARCHITECTURE.md)
 
@@ -31,7 +31,7 @@ Layering rules (depguard-enforced):
 Cross-cutting:
 - Errors: return `*apperror.Error` from usecases/repositories; `middleware.AppError` maps to gRPC codes and the gateway error handler maps those to HTTP JSON. Repositories convert driver errors to domain errors (`pgx.ErrNoRows` → `domain.ErrNotFound`).
 - Auth: `middleware.Auth` checks bearer JWTs only for methods listed in each feature's `ProtectedMethods` map (merged in `container.protectedMethods`). Identity travels via `ctxutil.Identity`, not raw claims.
-- Config: koanf, precedence defaults < `config/config.yaml` < env (`TEMTEM_` prefix, `__` = nesting: `TEMTEM_POSTGRES__HOST`).
+- Config: koanf, precedence defaults < env (`TEMTEM_` prefix, `__` = nesting: `TEMTEM_POSTGRES__HOST`). Environment variables are the single source of truth; copy `.env.example` to `.env` (gitignored, auto-loaded by `make`) for local dev. `--config path.yaml` can still layer in a yaml file for local stacking, but it's optional and loads before env, so env always wins.
 
 ## Adding a feature
 

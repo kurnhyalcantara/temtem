@@ -1,9 +1,9 @@
 // Package config loads application configuration with the precedence:
-// defaults < yaml file < environment variables.
-//
-// Environment variables use the TEMTEM_ prefix; a double underscore
-// separates nesting levels and single underscores are kept within a key:
-// TEMTEM_POSTGRES__MAX_CONNS overrides postgres.max_conns.
+// defaults < environment variables. Environment variables (TEMTEM_ prefix,
+// "__" separates nesting levels, e.g. TEMTEM_POSTGRES__MAX_CONNS overrides
+// postgres.max_conns) are the source of truth; see .env.example. A yaml file
+// is also supported via --config for local stacking, but is optional and
+// loaded before env so env still wins.
 package config
 
 import (
@@ -18,10 +18,7 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-const (
-	envPrefix   = "TEMTEM_"
-	DefaultPath = "config/config.yaml"
-)
+const envPrefix = "TEMTEM_"
 
 type Config struct {
 	App      App      `koanf:"app"`

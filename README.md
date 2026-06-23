@@ -14,7 +14,10 @@ feature's shape for new features.
 ## Requirements
 
 - Go 1.25+
-- Docker (Postgres/Redis via compose)
+- Postgres + Redis reachable for local dev — either the shared `koer-network`
+  Postgres/Redis from the infernape platform (what `deployments/docker-compose.yml`
+  joins), or your own local instances; `deployments/docker-compose.yml` itself
+  only adds temtem as an upstream, it doesn't start Postgres/Redis
 - Proto contracts live in [`github.com/kurnhyalcantara/probopass`](https://github.com/kurnhyalcantara/probopass);
   this service imports the generated Go stubs as a module dependency. `make
   proto-update` pulls the latest.
@@ -23,7 +26,7 @@ feature's shape for new features.
 ## Quickstart
 
 ```sh
-docker compose -f deployments/docker-compose.yml up -d postgres redis
+cp .env.example .env         # fill in real values; see Configuration below
 scripts/migrate.sh up        # or: make migrate-up (needs the migrate CLI)
 make run
 ```
@@ -59,13 +62,14 @@ Ops endpoints on :9100: `/metrics`, `/healthz`, `/readyz`.
 | `make migrate-up` / `make migrate-down` | apply / roll back one migration |
 | `make migrate-create NAME=...` | create a new migration pair |
 | `make docker-build` | build the production image |
-| `make docker-up` / `make docker-down` | start / stop compose services |
+| `make compose-up` / `make compose-down` | start / stop temtem against the shared `koer-network` |
+| `make compose-migrate` | run migrations via the dockerized `migrate` service |
 
 ## Project structure
 
 ```
 cmd/server/       cobra CLI: serve (config → container → run) + version
-config/           config loader (defaults < yaml < TEMTEM_* env)
+config/           config loader (defaults < TEMTEM_* env; optional --config yaml overlay)
 internal/
   domain/         pure domain models and invariants
   features/       one vertical slice per feature (delivery/usecase/repository/dto/mapper/validator)
@@ -86,10 +90,15 @@ consumed as a module dependency.
 
 ## Configuration
 
-Precedence: defaults < `config/config.yaml` < environment. Env convention:
-`TEMTEM_` prefix, `__` for nesting — `TEMTEM_POSTGRES__HOST=db` overrides
-`postgres.host`. See `config/config.example.yaml`. The server refuses to start in
-production with the default JWT secret.
+Environment variables are the single source of truth: precedence is defaults
+(`config/config.go`) < environment. Convention: `TEMTEM_` prefix, `__` for
+nesting — `TEMTEM_POSTGRES__HOST=db` overrides `postgres.host`. Copy
+`.env.example` to `.env` (gitignored, auto-loaded by `make`) for local dev.
+`Makefile`'s `migrate-up`/`migrate-down` read the same `TEMTEM_POSTGRES__*`
+vars so migrations never drift from the app. The server refuses to start in
+production with the default JWT secret. A yaml file can still be layered in
+via `--config path.yaml` for local stacking, but it's optional and loaded
+before env, so env always wins.
 
 ## Using this template for a new service
 

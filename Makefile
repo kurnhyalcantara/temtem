@@ -1,9 +1,19 @@
+# Load local env vars (gitignored; see .env.example) so TEMTEM_* vars set
+# there reach both `go run` and the migrate DSN below — the single source
+# of truth is the environment, not a yaml file.
+-include .env
+export
+
 MODULE        := github.com/kurnhyalcantara/temtem
 BINARY        := temtem
 COMPOSE_FILE  := deployments/docker-compose.yml
 COMPOSE       := docker compose --project-directory . -f $(COMPOSE_FILE)
 MIGRATIONS    := migrations
-POSTGRES_DSN  ?= postgres://temtem:temtem@localhost:5432/temtem?sslmode=disable
+
+# Derived from the same TEMTEM_POSTGRES__* vars the app reads, so migrations
+# and the server never drift apart. Override with `make migrate-up POSTGRES_DSN=...`
+# or set TEMTEM_MIGRATE_DATABASE_URL (.env) when the password has reserved URL chars.
+POSTGRES_DSN ?= $(if $(TEMTEM_MIGRATE_DATABASE_URL),$(TEMTEM_MIGRATE_DATABASE_URL),postgres://$(if $(TEMTEM_POSTGRES__USER),$(TEMTEM_POSTGRES__USER),temtem):$(if $(TEMTEM_POSTGRES__PASSWORD),$(TEMTEM_POSTGRES__PASSWORD),temtem)@$(if $(TEMTEM_POSTGRES__HOST),$(TEMTEM_POSTGRES__HOST),localhost):$(if $(TEMTEM_POSTGRES__PORT),$(TEMTEM_POSTGRES__PORT),5432)/$(if $(TEMTEM_POSTGRES__DATABASE),$(TEMTEM_POSTGRES__DATABASE),temtem)?sslmode=$(if $(TEMTEM_POSTGRES__SSL_MODE),$(TEMTEM_POSTGRES__SSL_MODE),disable))
 
 VERSION       ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT        ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
@@ -13,10 +23,8 @@ LDFLAGS       := -s -w \
   -X main.buildCommit=$(COMMIT) \
   -X main.buildDate=$(DATE)
 
-.PHONY: all build run test test-integration lint vet proto-update \
+.PHONY: build run test test-integration lint vet proto-update \
         migrate-up migrate-down migrate-create docker-build compose-up compose-down compose-migrate tidy tools
-
-all: lint test build
 
 build:
 	go build -trimpath -ldflags="$(LDFLAGS)" -o bin/$(BINARY) ./cmd/server

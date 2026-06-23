@@ -5,8 +5,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-
-	"github.com/kurnhyalcantara/temtem/config"
 )
 
 // Build metadata, injected via -ldflags at build time (see the Makefile). They
@@ -40,8 +38,8 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.PersistentFlags().StringVar(&configPath, "config", config.DefaultPath,
-		"path to config yaml (\"\" to use defaults + env only)")
+	root.PersistentFlags().StringVar(&configPath, "config", "",
+		"optional path to a yaml config file to layer under env vars (defaults + env are the source of truth)")
 
 	root.AddCommand(newServeCmd(), newVersionCmd())
 	return root

@@ -8,15 +8,13 @@
 version: 1
 
 # Paths never copied into a generated project: VCS metadata, local secrets and
-# build output, editor/agent config, the seeded (non-example) config, and this
-# manifest itself.
+# build output, editor/agent config, and this manifest itself.
 exclude:
   - .git
   - bin
   - .env
   - .claude
   - CLAUDE.md
-  - config/config.yaml
   - scaffold.yaml
 
 # Ordered token substitutions, most-specific first so the full module path is
