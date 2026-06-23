@@ -13,9 +13,9 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	// scaffold:session:start
-	sessionv1 "github.com/kurnhyalcantara/probopass/gen/go/probopass/session/v1"
-	// scaffold:session:end
+	// scaffold:example:start
+	examplev1 "github.com/kurnhyalcantara/probopass/gen/go/probopass/example/v1"
+	// scaffold:example:end
 	// scaffold:redis:start
 	redislib "github.com/redis/go-redis/v9"
 	// scaffold:redis:end
@@ -25,10 +25,6 @@ import (
 
 	"github.com/kurnhyalcantara/kingler/pkg/middleware"
 	platgrpc "github.com/kurnhyalcantara/kingler/pkg/platform/grpc"
-
-	// scaffold:session:start
-	platjwt "github.com/kurnhyalcantara/kingler/pkg/platform/jwt"
-	// scaffold:session:end
 	"github.com/kurnhyalcantara/kingler/pkg/platform/logger"
 	"github.com/kurnhyalcantara/kingler/pkg/platform/postgres"
 
@@ -38,18 +34,17 @@ import (
 	// scaffold:telemetry:start
 	"github.com/kurnhyalcantara/kingler/pkg/platform/telemetry"
 	// scaffold:telemetry:end
-	// scaffold:session:start
+	// scaffold:example:start
 	platvalidator "github.com/kurnhyalcantara/kingler/pkg/platform/validator"
-	// scaffold:session:end
+	// scaffold:example:end
 
 	"github.com/kurnhyalcantara/temtem/config"
-	// scaffold:session:start
-	sessiongrpc "github.com/kurnhyalcantara/temtem/internal/features/session/delivery/grpc"
-	sessionrest "github.com/kurnhyalcantara/temtem/internal/features/session/delivery/rest"
-	"github.com/kurnhyalcantara/temtem/internal/features/session/repository"
-	"github.com/kurnhyalcantara/temtem/internal/features/session/usecase"
-	"github.com/kurnhyalcantara/temtem/internal/features/session/validator"
-	// scaffold:session:end
+	// scaffold:example:start
+	"github.com/kurnhyalcantara/temtem/internal/handler"
+	"github.com/kurnhyalcantara/temtem/internal/repository"
+	"github.com/kurnhyalcantara/temtem/internal/usecase"
+	"github.com/kurnhyalcantara/temtem/internal/validator"
+	// scaffold:example:end
 )
 
 type Container struct {
@@ -72,88 +67,79 @@ type Container struct {
 
 // Build constructs the full application graph.
 func Build(ctx context.Context, cfg *config.Config) (*Container, error) {
-	log := logger.New(
-		logger.WithLevel(cfg.Log.Level),
-		logger.WithFormat(cfg.Log.Format),
-		logger.WithService(cfg.App.Name, cfg.App.Version, cfg.App.Env),
-	)
+	log := logger.New(logger.Config{
+		Level:   cfg.Log.Level,
+		Format:  cfg.Log.Format,
+		Name:    cfg.App.Name,
+		Version: cfg.App.Version,
+		Env:     cfg.App.Env,
+	})
 
 	// scaffold:telemetry:start
-	tel, err := telemetry.New(ctx,
-		telemetry.WithService(cfg.App.Name, cfg.App.Version, cfg.App.Env),
-		telemetry.WithEnabled(cfg.Telemetry.Enabled),
-		telemetry.WithOTLPEndpoint(cfg.Telemetry.OTLPEndpoint),
-		telemetry.WithSampleRatio(cfg.Telemetry.SampleRatio),
-	)
+	tel, err := telemetry.New(ctx, telemetry.Config{
+		Name:         cfg.App.Name,
+		Version:      cfg.App.Version,
+		Env:          cfg.App.Env,
+		Enabled:      cfg.Telemetry.Enabled,
+		OTLPEndpoint: cfg.Telemetry.OTLPEndpoint,
+		SampleRatio:  cfg.Telemetry.SampleRatio,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("container: %w", err)
 	}
 	// scaffold:telemetry:end
 
-	pg, err := postgres.New(ctx,
-		postgres.WithDSN(cfg.Postgres.DSN()),
-		postgres.WithMaxConns(cfg.Postgres.MaxConns),
-		postgres.WithMinConns(cfg.Postgres.MinConns),
-		postgres.WithMaxConnLifetime(cfg.Postgres.MaxConnLifetime),
-	)
+	pg, err := postgres.New(ctx, postgres.Config{
+		DSN:             cfg.Postgres.DSN(),
+		MaxConns:        cfg.Postgres.MaxConns,
+		MinConns:        cfg.Postgres.MinConns,
+		MaxConnLifetime: cfg.Postgres.MaxConnLifetime,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("container: %w", err)
 	}
 
 	// scaffold:redis:start
-	rdb, err := redis.New(ctx,
-		redis.WithAddr(cfg.Redis.Addr),
-		redis.WithPassword(cfg.Redis.Password),
-		redis.WithDB(cfg.Redis.DB),
-	)
+	rdb, err := redis.New(ctx, redis.Config{
+		Addr:     cfg.Redis.Addr,
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
 	if err != nil {
 		pg.Close()
 		return nil, fmt.Errorf("container: %w", err)
 	}
 	// scaffold:redis:end
 
-	// scaffold:session:start
-	// Platform components.
-	tokens := platjwt.NewTokenManager(
-		platjwt.WithSecret(cfg.JWT.Secret),
-		platjwt.WithIssuer(cfg.JWT.Issuer),
-		platjwt.WithAccessTTL(cfg.JWT.AccessTTL),
-		platjwt.WithRefreshTTL(cfg.JWT.RefreshTTL),
-	)
+	// scaffold:example:start
 	baseValidator := platvalidator.New()
 
-	// Session feature: repository -> usecase -> handler. The Redis cache TTL
-	// tracks the access-token TTL: a cached session can never outlive the
-	// token that references it.
+	// Example feature: repository -> usecase -> handler.
 	// scaffold:redis:start
-	sessionRepo := repository.NewRedisCache(
+	exampleRepo := repository.NewRedisCache(
 		repository.NewPostgres(pg),
 		rdb,
-		cfg.JWT.AccessTTL,
+		cfg.Redis.CacheTTL,
 		log,
 	)
 	// scaffold:redis:end
 	// scaffold:redis:else:start
-	// scaffold> sessionRepo := repository.NewPostgres(pg)
+	// scaffold> exampleRepo := repository.NewPostgres(pg)
 	// scaffold:redis:else:end
-	sessionUsecase := usecase.New(sessionRepo, tokens)
-	sessionHandler := sessiongrpc.NewHandler(sessionUsecase, validator.New(baseValidator))
-	// scaffold:session:end
+	exampleUsecase := usecase.New(exampleRepo)
+	exampleHandler := handler.NewHandler(exampleUsecase, validator.New(baseValidator))
+	// scaffold:example:end
 
-	// Interceptor chain, outermost first. AppError must wrap Auth so that
-	// errors returned by the auth interceptor are also mapped to statuses.
+	// Interceptor chain, outermost first.
 	grpcServer, healthServer := platgrpc.NewServer(
 		middleware.RequestID(),
 		middleware.Recovery(log),
 		middleware.Logging(log),
 		middleware.AppError(),
-		// scaffold:session:start
-		middleware.Auth(tokens, protectedMethods()),
-		// scaffold:session:end
 	)
-	// scaffold:session:start
-	sessionv1.RegisterSessionServiceServer(grpcServer, sessionHandler)
-	// scaffold:session:end
+	// scaffold:example:start
+	examplev1.RegisterExampleServiceServer(grpcServer, exampleHandler)
+	// scaffold:example:end
 	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
 
 	gatewayMux := platgrpc.NewGatewayMux(middleware.GatewayOptions()...)
@@ -165,8 +151,8 @@ func Build(ctx context.Context, cfg *config.Config) (*Container, error) {
 		// scaffold:redis:end
 		return nil, fmt.Errorf("container: %w", err)
 	}
-	// scaffold:session:start
-	if err := sessionrest.Register(ctx, gatewayMux, gatewayConn); err != nil {
+	// scaffold:example:start
+	if err := handler.RegisterREST(ctx, gatewayMux, gatewayConn); err != nil {
 		pg.Close()
 		// scaffold:redis:start
 		_ = rdb.Close()
@@ -174,7 +160,7 @@ func Build(ctx context.Context, cfg *config.Config) (*Container, error) {
 		_ = gatewayConn.Close()
 		return nil, fmt.Errorf("container: %w", err)
 	}
-	// scaffold:session:end
+	// scaffold:example:end
 
 	return &Container{
 		Config:   cfg,
@@ -192,19 +178,6 @@ func Build(ctx context.Context, cfg *config.Config) (*Container, error) {
 		gatewayConn:  gatewayConn,
 	}, nil
 }
-
-// scaffold:session:start
-// protectedMethods merges every feature's auth-required RPCs for the auth
-// interceptor.
-func protectedMethods() map[string]bool {
-	protected := map[string]bool{}
-	for method := range sessiongrpc.ProtectedMethods {
-		protected[method] = true
-	}
-	return protected
-}
-
-// scaffold:session:end
 
 // Ready reports whether downstream dependencies are reachable; it backs the
 // /readyz endpoint.

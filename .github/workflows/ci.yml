@@ -53,8 +53,6 @@ jobs:
           --health-interval 2s
           --health-timeout 2s
           --health-retries 15
-    env:
-      TEMTEM_JWT__SECRET: ci-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

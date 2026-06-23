@@ -26,17 +26,17 @@ linters:
             - github.com/kurnhyalcantara/temtem/internal/domain
         # Usecases never see transport types or infrastructure drivers;
         # they consume ports (repository interfaces, locally defined
-        # interfaces like TokenIssuer).
+        # interfaces injected from the container).
         usecase-clean:
           files:
-            - "**/internal/features/*/usecase/**"
+            - "**/internal/usecase/**"
           deny:
             - pkg: github.com/kurnhyalcantara/probopass/gen
-              desc: usecase must not depend on transport types; map in delivery/mapper
+              desc: usecase must not depend on transport types; map in handler/mapper
             - pkg: github.com/kurnhyalcantara/kingler/pkg/platform
               desc: usecase must not depend on infrastructure; define the port where it is consumed
-            - pkg: github.com/kurnhyalcantara/temtem/internal/features/session/delivery
-              desc: usecase must not depend on delivery
+            - pkg: github.com/kurnhyalcantara/temtem/internal/handler
+              desc: usecase must not depend on the handler (delivery) layer
             - pkg: google.golang.org/grpc
               desc: usecase must not depend on transport
             - pkg: github.com/jackc/pgx

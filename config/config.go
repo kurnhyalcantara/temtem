@@ -25,7 +25,6 @@ type Config struct {
 	Server   Server   `koanf:"server"`
 	Postgres Postgres `koanf:"postgres"`
 	Redis    Redis    `koanf:"redis"`
-	JWT      JWT      `koanf:"jwt"`
 	Log      Log      `koanf:"log"`
 	// scaffold:telemetry:start
 	Telemetry Telemetry `koanf:"telemetry"`
@@ -68,13 +67,8 @@ type Redis struct {
 	Addr     string `koanf:"addr"`
 	Password string `koanf:"password"`
 	DB       int    `koanf:"db"`
-}
-
-type JWT struct {
-	Secret     string        `koanf:"secret"`
-	Issuer     string        `koanf:"issuer"`
-	AccessTTL  time.Duration `koanf:"access_ttl"`
-	RefreshTTL time.Duration `koanf:"refresh_ttl"`
+	// CacheTTL bounds how long the read-through cache decorator keeps entries.
+	CacheTTL time.Duration `koanf:"cache_ttl"`
 }
 
 type Log struct {
@@ -110,9 +104,7 @@ func defaults() map[string]any {
 		"postgres.max_conn_lifetime": "1h",
 		"redis.addr":                 "localhost:6379",
 		"redis.db":                   0,
-		"jwt.issuer":                 "temtem",
-		"jwt.access_ttl":             "15m",
-		"jwt.refresh_ttl":            "720h",
+		"redis.cache_ttl":            "5m",
 		"log.level":                  "info",
 		"log.format":                 "json",
 		// scaffold:telemetry:start
@@ -158,11 +150,8 @@ func Load(path string) (*Config, error) {
 }
 
 func (c *Config) validate() error {
-	if c.JWT.Secret == "" {
-		return fmt.Errorf("config: jwt.secret is required (set TEMTEM_JWT__SECRET)")
-	}
-	if c.App.IsProduction() && c.JWT.Secret == "local-development-secret-change-me" {
-		return fmt.Errorf("config: refusing to start in production with the default jwt secret")
+	if c.Postgres.Host == "" {
+		return fmt.Errorf("config: postgres.host is required (set TEMTEM_POSTGRES__HOST)")
 	}
 	return nil
 }

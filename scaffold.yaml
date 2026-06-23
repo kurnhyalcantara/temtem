@@ -32,28 +32,31 @@ replacements:
 
 # Optional feature/infra slices. Disabling one deletes its removePaths and
 # strips the marker regions named in removeBlocks (a toggle may strip another's
-# wiring — e.g. dropping `session` also strips the jwt/auth blocks it is the
-# sole consumer of).
+# wiring — e.g. dropping `example` also strips the `redis` cache block, which
+# requires it).
 toggles:
-  - id: session
-    prompt: "Include the sample 'session' feature (with its jwt/auth wiring)?"
+  - id: example
+    prompt: "Include the sample 'example' CRUD feature?"
     default: true
     removePaths:
-      - internal/features/session
-      - internal/domain/session
+      - internal/domain
+      - internal/usecase
+      - internal/repository
+      - internal/validator
+      - internal/handler
       - test/integration
-      - migrations/000001_create_sessions.up.sql
-      - migrations/000001_create_sessions.down.sql
+      - migrations/000001_create_examples.up.sql
+      - migrations/000001_create_examples.down.sql
     removeBlocks:
-      - session
+      - example
 
   - id: redis
     prompt: "Include the Redis read-through cache decorator?"
     default: true
     requires:
-      - session
+      - example
     removePaths:
-      - internal/features/session/repository/redis_cache.go
+      - internal/repository/redis_cache.go
     removeBlocks:
       - redis
 

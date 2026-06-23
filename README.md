@@ -1,15 +1,15 @@
 # temtem
 
 Production-grade Go microservice template — the standard blueprint for new
-services. Feature-oriented Clean Architecture, gRPC-first with grpc-gateway
-REST, PostgreSQL, Redis, JWT auth, OpenTelemetry + Prometheus, Docker, and
-GitHub Actions CI.
+services. Layered Clean Architecture (organized by responsibility, not by
+feature), gRPC-first with grpc-gateway REST, PostgreSQL, Redis,
+OpenTelemetry + Prometheus, Docker, and GitHub Actions CI.
 
-The repository ships with one complete example feature — `session`
-(authentication sessions: create/get/refresh/revoke with refresh-token
-rotation) — exercising every layer of the architecture. Read
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the rules; copy the session
-feature's shape for new features.
+The repository ships with one complete reference slice — `example`
+(a CRUD resource: create/get/list/update/delete with token-based list
+pagination) — exercising every layer of the architecture. Read
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the rules; mirror the
+`example` slice's shape for new capabilities.
 
 ## Requirements
 
@@ -34,17 +34,20 @@ make run
 Smoke test over REST (gateway on :8080):
 
 ```sh
-# login → returns session + access/refresh tokens
-curl -s -X POST localhost:8080/v1/sessions -d '{"user_id":"u-123"}'
+# create → returns the example resource
+curl -s -X POST localhost:8080/v1/examples -d '{"name":"foo","description":"bar"}'
 
-# authenticated read
-curl -s localhost:8080/v1/sessions/<session_id> -H "Authorization: Bearer <access_token>"
+# read one
+curl -s localhost:8080/v1/examples/<id>
 
-# rotate the refresh token
-curl -s -X POST localhost:8080/v1/sessions/refresh -d '{"refresh_token":"<refresh_token>"}'
+# list (paginated)
+curl -s 'localhost:8080/v1/examples?page.page_size=20'
 
-# logout
-curl -s -X DELETE localhost:8080/v1/sessions/<session_id> -H "Authorization: Bearer <access_token>"
+# update
+curl -s -X PATCH localhost:8080/v1/examples/<id> -d '{"name":"foo2","description":"baz"}'
+
+# delete
+curl -s -X DELETE localhost:8080/v1/examples/<id>
 ```
 
 gRPC is on :9090 (reflection enabled — `grpcurl -plaintext localhost:9090 list`).
@@ -72,11 +75,10 @@ cmd/server/       cobra CLI: serve (config → container → run) + version
 config/           config loader (defaults < TEMTEM_* env; optional --config yaml overlay)
 internal/
   domain/         pure domain models and invariants
-  features/       one vertical slice per feature (delivery/usecase/repository/dto/mapper/validator)
-  middleware/     gRPC interceptors + gateway options
-  constants/      app-wide constants
-pkg/              publicly importable library code (apperror, ctxutil, pagination)
-platform/         infrastructure initialization only (pg, redis, grpc, jwt, logger, telemetry, validator)
+  usecase/        application logic (interface + impl; tests against a fake repo)
+  repository/     outbound port (interface) + adapters (postgres.go, redis_cache.go)
+  validator/      input validation → apperror.CodeInvalidArgument
+  handler/        gRPC server impl + REST gateway registration (+ dto, mapper)
 container/        composition root (Build wires everything; Close tears it down)
 migrations/       golang-migrate SQL files
 deployments/      Dockerfile + docker-compose
@@ -95,15 +97,14 @@ Environment variables are the single source of truth: precedence is defaults
 nesting — `TEMTEM_POSTGRES__HOST=db` overrides `postgres.host`. Copy
 `.env.example` to `.env` (gitignored, auto-loaded by `make`) for local dev.
 `Makefile`'s `migrate-up`/`migrate-down` read the same `TEMTEM_POSTGRES__*`
-vars so migrations never drift from the app. The server refuses to start in
-production with the default JWT secret. A yaml file can still be layered in
-via `--config path.yaml` for local stacking, but it's optional and loaded
+vars so migrations never drift from the app. A yaml file can still be layered
+in via `--config path.yaml` for local stacking, but it's optional and loaded
 before env, so env always wins.
 
 ## Using this template for a new service
 
 1. Copy the repo; replace module path `github.com/kurnhyalcantara/temtem` and
    the `TEMTEM_` env prefix (`config/config.go`).
-2. Rename/replace the `session` feature with your first real feature following
-   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#adding-a-feature-recipe).
+2. Replace the `example` slice with your first real capability following
+   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#adding-or-changing-a-capability-recipe).
 3. Update `app.name` in config and the compose/CI image names.

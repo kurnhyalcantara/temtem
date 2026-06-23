@@ -3,12 +3,11 @@ name: temtem
 # Runs temtem as an upstream behind the infernape Kong platform.
 # Joins the shared external `koer-network` and talks to the platform's shared
 # `koer-postgres` / `koer-redis`. Public traffic enters via Kong on :8000
-# (route /api/session -> http://temtem:8080); see infernape/kong/kong.yaml.
+# (route /api/example -> http://temtem:8080); see infernape/kong/kong.yaml.
 #
 # Secrets are supplied at runtime via the environment (or a gitignored
 # deployments/.env), never hardcoded here. Required vars:
 #   TEMTEM_POSTGRES__PASSWORD  (infernape POSTGRES_PASSWORD)
-#   TEMTEM_JWT__SECRET         (any non-empty secret)
 
 networks:
   koer-network:
@@ -45,7 +44,6 @@ services:
       TEMTEM_POSTGRES__PASSWORD: ${TEMTEM_POSTGRES__PASSWORD:?set TEMTEM_POSTGRES__PASSWORD}
       TEMTEM_POSTGRES__DATABASE: ${TEMTEM_POSTGRES__DATABASE:-temtem}
       TEMTEM_REDIS__ADDR: ${TEMTEM_REDIS__ADDR:-koer-redis:6379}
-      TEMTEM_JWT__SECRET: ${TEMTEM_JWT__SECRET:?set TEMTEM_JWT__SECRET}
     ports:
       - "9090:9090"
       - "8080:8080"
