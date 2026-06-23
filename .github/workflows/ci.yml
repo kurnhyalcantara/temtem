@@ -75,4 +75,4 @@ jobs:
           go-version-file: go.mod
       - run: go build ./...
       - name: docker build
-        run: docker build -f deployments/Dockerfile -t temtem:ci .
+        run: make docker-build IMAGE_TAG=ci

@@ -6,6 +6,7 @@ export
 
 MODULE        := github.com/kurnhyalcantara/temtem
 BINARY        := temtem
+IMAGE_TAG     ?= latest
 COMPOSE_FILE  := deployments/docker-compose.yml
 COMPOSE       := docker compose --project-directory . -f $(COMPOSE_FILE)
 MIGRATIONS    := migrations
@@ -61,7 +62,9 @@ migrate-create:
 	migrate create -ext sql -dir $(MIGRATIONS) -seq $(NAME)
 
 docker-build:
-	docker build -f deployments/Dockerfile -t $(BINARY):latest .
+	docker build -f deployments/Dockerfile \
+	  --build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT) --build-arg DATE=$(DATE) \
+	  -t $(BINARY):$(IMAGE_TAG) .
 
 compose-up:
 	$(COMPOSE) --profile app up -d
