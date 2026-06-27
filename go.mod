@@ -11,8 +11,8 @@ require (
 	github.com/knadh/koanf/providers/env v1.1.0
 	github.com/knadh/koanf/providers/file v1.2.1
 	github.com/knadh/koanf/v2 v2.3.5
-	github.com/kurnhyalcantara/kingler v0.1.0
-	github.com/kurnhyalcantara/probopass v0.0.0-20260612065359-75dd369874cb
+	github.com/kurnhyalcantara/kingler v0.1.1-0.20260623055608-c53348fb52e5
+	github.com/kurnhyalcantara/probopass v0.0.0-20260623055517-0a9cf0df2706
 	github.com/redis/go-redis/v9 v9.20.1
 	github.com/spf13/cobra v1.10.2
 	google.golang.org/grpc v1.81.1
@@ -68,11 +68,4 @@ require (
 	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260610212136-7ab31c22f7ad // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-)
-
-// Local development across the kingler/probopass/temtem repos. For a real
-// release, publish those modules and bump the versions above instead.
-replace (
-	github.com/kurnhyalcantara/kingler => ../kingler
-	github.com/kurnhyalcantara/probopass => ../probopass
 )

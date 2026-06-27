@@ -22,3 +22,6 @@ deployments/.env
 
 # OS
 .DS_Store
+
+# Dependencies
+vendor/
